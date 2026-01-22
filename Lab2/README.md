@@ -1,33 +1,75 @@
-  # DigitalComputerLab2
-This project implements a system that includes an MSP430 microcontroller and is based on Simple FSM.
-With each button press, we enter a state:
+# Lab 2 - MSP430 System Programming: Timers, ADC & DAC
 
-- PB0 (state1):
- 	 create a frequency counter to measure f<sub>in</sub> which is an outside clock from the scope and enter to P2.4. the value we found we show on the LCD dynamically and without refreshing the 
-   LCD, the frequency will be between 20Hz to 20kHz.
-  
-  <img width="269" alt="image" src="https://github.com/Orisadek/DigitalComputerLab2/assets/43981934/3d346c20-adb6-43d0-9814-89d6047ddd70">
+University lab implementing a portable layered software architecture (BSP, HAL, API, App) on MSP430 microcontrollers. The project demonstrates an interrupt-driven Finite State Machine (FSM) to manage Timers (Input Capture/Output Compare), ADC measurements, LCD display control, and signal generation.
+# Code Structure
 
-- PB1 (state2):
-   create a clock that counts until one minute (in space of one sec) and then back to zero sec and shows on the LCD.
-  
-  <img width="260" alt="image" src="https://github.com/Orisadek/DigitalComputerLab2/assets/43981934/b415852f-581f-43d1-9740-28403d41cdbf">
+The project follows a generic layered architecture to ensure portability between MSP430x2xx and MSP430x4xx families:
 
-- PB2 (state3):
-   Create a Tones generator from an outside signal v<sub>in</sub> that is created in the scope, using the ADC we transform v<sub>in</sub> to f<sub>out</sub>. the frequency we get is the tone.
-   The actual Tones come out of the Buzzer we connect to P2.2
-  
-  <img width="303" alt="image" src="https://github.com/Orisadek/DigitalComputerLab2/assets/43981934/929c6fa9-ef37-4256-a466-a7e35d9a6c3d">
+    BSP (Board Support Package): Hardware configuration (GPIO, Clock calibration, LCD pins).
 
-## Sleep Mode (state0):
-state0 is in sleep mode (LPM0).
+    HAL (Hardware Abstraction Layer): Drivers for LCD, Timers (A0/A1), ADC10, and Signal generation.
 
-## Real-Time assignment: 
-add state4 as follows,
+    API: High-level interface functions (e.g., string printing to LCD, frequency calculation).
 
-- PB3 (state4):
-	print on the LCD the first and last names in a delay of one sec.
+    APP: Main FSM logic and application flow using integer arithmetic (Q-Format).
 
-FSM:
+# States Implementation
 
-<img width="521" alt="image" src="https://github.com/Orisadek/DigitalComputerLab2/assets/43981934/2f8ddb22-5ac7-4894-b001-38a7cd6b274c">
+Button-driven states managed by a "Simple FSM" architecture, utilizing hardware timers and analog interfaces:
+PB0 (State 1): Frequency Counter
+
+    Action: Measures an external square wave signal frequency (fin​) connected to the Input Capture pin.
+
+    Display: Shows the measured frequency in Hz on the LCD.
+
+    Behavior:
+
+        Uses Timer Input Capture mode for high precision.
+
+        Supports frequency range: 50Hz - 20kHz.
+
+        Updates the LCD value dynamically.
+
+    Constraint: interruptible. Requires a signal generator input.
+
+PB1 (State 2): Stopwatch
+
+    Action: Implements a digital stopwatch displayed on the LCD in MM:SS format.
+
+    Behavior:
+
+        SW0 High ('1'): Starts/Resumes counting.
+
+        SW0 Low ('0'): Pauses counting.
+
+        Uses Timer Interrupts (Up/Down mode) for precise 1-second timing.
+
+    Memory: Resumes from the last stored time value when toggled or re-entered.
+
+PB2 (State 3): Tone Generator
+
+    Action: Generates a PWM audio signal on the Buzzer based on Potentiometer input.
+
+    Behavior:
+
+        Input: Reads analog voltage (Vin​) from the potentiometer using ADC10.
+
+        Processing: Maps voltage (0V - 3.3V) to frequency (1kHz - 2.5kHz) using a linear transformation formula.
+
+        Output: Generates the calculated frequency using Timer Output Compare (PWM) on the buzzer pin.
+
+    Constraint: Interruptible. Runs continuously, updating pitch in real-time until a state change occurs.
+
+PB3 (State 4): Real-Time Name Display
+
+    Action: Prints the First and Last names on the LCD.
+
+    Timing: Updates with a delay of 1 second.
+
+    Constraint: Real-Time Task.
+
+Sleep Mode (State 0)
+
+    Default State: System enters LPM (Low Power Mode) when idle.
+
+    Behavior: Peripherals are disabled or low-power. CPU sleeps until a new Port interrupt (button press) occurs.

@@ -1,40 +1,82 @@
-# DigitalComputerLab3
-This project implements a system that includes an MSP430 microcontroller and is based on Simple FSM.
+# Lab 3 - MSP430 System Programming: DMA & Data Structures
 
-**The topic of this Lab is DMA.**
+University lab implementing a layered software architecture (BSP, HAL, API, App) on MSP430 microcontrollers. The project focuses on the Direct Memory Access (DMA) controller for efficient data transfer, signal generation, and memory manipulation without CPU intervention.
+# Code Structure
 
-    a basic requirement of this lab is to define the MxN matrix of chars. (array of strings)
-    
- <img width="246" alt="image" src="https://github.com/Orisadek/DigitalComputerLab3/assets/43981934/5bf0034a-f053-4c83-ae68-39dff4027137">
+The project follows a generic layered architecture to ensure portability:
 
+    BSP (Board Support Package): Hardware configuration (DMA channels, LCD, Keypad GPIO).
 
-With each button press, we enter a state:
+    HAL (Hardware Abstraction Layer): Drivers for DMA controller (Block/Single transfer), LCD (4-bit mode), and Keypad scanning.
 
-- PB0 (state1):
- 	 Create an idiom recorder, for that, we will get input from the user (using a keypad) and save the result in an array named "idiom_recorder".
-   Each input will be no more than 32 chars.
-  
-   Keypad definition:
-  
-  <img width="226" alt="image" src="https://github.com/Orisadek/DigitalComputerLab3/assets/43981934/1099d1cd-cabf-4ea5-b441-dff0ea71ee95">
+    API: High-level functions for string mirroring and Keypad input processing.
 
-- PB1 (state2):
-   Do a swap of lines I,j in the matrix using only DMA, it will be done by copying the matrix and changing the copy (the function gets the matrix and two indexes).
-  After the swap the updated matrix will be shown on the LCD with the option to scroll down using the keypad (with any chosen key).
-  
-- PB2 (state3):
-   using only DMA light single led and shifting it from left to right in a cycle with a delay of 500ms (Trigger of TimerB).
+    APP: Main FSM logic managing DMA triggers and state transitions.
 
-## Sleep Mode (state0):
-state0 is in sleep mode (LPM0).
+# States Implementation
 
-## Real-Time assignment: 
-add state4 as follows,
+Button-driven states managed by a "Simple FSM" architecture, utilizing the DMA controller for background operations:
 
-- PB3 (state4):
-Do a mirroring to the string:
+PB0 (State 1): Idiom Recorder
 
-      "Google Colaboratory is a free Jupyter notebook environment that runs on Google’s cloud servers, letting the user leverage backend hardware like GPUs and TPUs"
+    Action: Records a user-input string via the Keypad and displays it on the LCD.
 
-using DMA and printing it on the LCD
+    Behavior:
 
+        Inputs characters from a 4x4 Keypad.
+
+        Stores up to 32 characters in the idiom_recorder buffer.
+
+        Real-time echoing of typed characters to the LCD.
+
+    Constraint: Interruptible. Ends when a different state button is pressed.
+
+PB1 (State 2): DMA String Mirroring
+
+    Action: Mirrors a selected string from a static database using DMA Block Transfer.
+
+    Behavior:
+
+        User selects an index via Keypad to choose a string from data_base.
+
+        DMA Configuration: Configured to reverse the string (Source increment, Destination decrement).
+
+        Output: The mirrored string (strMirror) is printed to the LCD.
+
+    Constraint: Non-interruptible (Atomic). Must complete the mirroring and display process.
+
+PB2 (State 3): LED Pattern (DMA + Timer)
+
+    Action: Displays a specific array sequence [128, 224, 32, 126, 83, 44, 253, 113, 160] on the LEDs.
+
+    Behavior:
+
+        Uses DMA Single Transfer mode.
+
+        Trigger: Hardware trigger via TimerB (TACCR2_CCIFG) every 500ms.
+
+        Transfers data directly from memory to the Port Output Register (P2OUT) without CPU overhead.
+
+    Constraint: Non-interruptible (Atomic). Runs until the array cycle is complete.
+
+PB3 (State 4): Real-Time Google Colab Mirroring
+
+    Action: Mirrors and prints a long description string on the LCD using DMA.
+
+    Data Source:
+
+        "Google Colaboratory is a free Jupyter notebook environment that runs on Google’s cloud servers, letting the user leverage backend hardware like GPUs and TPUs"
+
+    Behavior:
+
+        Uses DMA to reverse the order of characters in memory.
+
+        Prints the processed string to the LCD with scrolling support if necessary.
+
+    Constraint: Real-Time Task.
+
+Sleep Mode (State 0)
+
+    Default State: System enters LPM (Low Power Mode) when idle.
+
+    Behavior: DMA channels disabled (unless active in background). CPU sleeps until a new Port interrupt occurs.

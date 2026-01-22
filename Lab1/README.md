@@ -54,7 +54,7 @@ PB2 (State 3): PWM Generation
 
     Behavior:
 
-        Odd press: 1 kHz frequency with 75% Duty Cycle.
+        Odd press: 4 kHz frequency with 75% Duty Cycle.
 
         Even press: 2 kHz frequency with 25% Duty Cycle.
 

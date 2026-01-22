@@ -16,6 +16,7 @@ The project follows a generic layered architecture to ensure portability between
 # States Implementation
 
 Button-driven states managed by a "Simple FSM" architecture, utilizing hardware timers and analog interfaces:
+
 PB0 (State 1): Frequency Counter
 
     Action: Measures an external square wave signal frequency (fin​) connected to the Input Capture pin.
